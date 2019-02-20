@@ -4,7 +4,7 @@ from django.contrib import admin
 
 
 from Xadmin.service.Xadmin import site,ModelXadmin
-
+from app02.models import *
 
 from app01.models import *
 from django.utils.safestring import  mark_safe

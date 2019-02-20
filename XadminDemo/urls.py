@@ -16,10 +16,12 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from Xadmin.service.Xadmin import site
+from stark.service.stark import starkSite
 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('Xadmin/', site.urls),
+    path('stark/', starkSite.urls),
 
 ]
