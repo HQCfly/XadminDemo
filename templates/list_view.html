@@ -1,34 +1,42 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>数据列表</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.min.css">
+    <script src="/static/jquery-3.3.1.js"></script>
 </head>
 <body>
 
-<h3>查看{{ model_name }}数据</h3>
+<h4>数据列表</h4>
+
 
 <div class="container">
     <div class="row">
-        <div class="col-lg-9">
+        <div class="col-md-9">
+            <a href="{{ add_url }}" class="btn btn-primary">添加数据</a>
             <table class="table table-bordered table-striped">
                 <thead>
-                    <tr>
+                     <tr>
                          {% for item in header_list %}
-                         <th>{{ item }}</th>
+                           <th>{{ item }}</th>
                          {% endfor %}
 
-                    </tr>
+
+                     </tr>
+
                 </thead>
                 <tbody>
-                      {% for new_data in new_data_list %}
-                          <tr>
-                              {% for item in new_data %}
-                                 <td>{{ item }}</td>
-                              {% endfor %}
-                          </tr>
-                      {% endfor %}
+                     {% for data in new_data_list %}
+
+                      <tr>
+                          {% for item in data %}
+                           <td>{{ item }}</td>
+                          {% endfor %}
+
+                      </tr>
+                     {% endfor %}
 
                 </tbody>
             </table>
@@ -38,5 +46,18 @@
 
 
 
+<script>
+
+   $("#choice").click(function () {
+
+     if($(this).prop("checked")){
+           $(".choice_item").prop("checked",true)
+     }else {
+           $(".choice_item").prop("checked",false)
+     }
+
+   })
+
+</script>
 </body>
 </html>

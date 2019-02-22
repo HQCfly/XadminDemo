@@ -1,24 +1,100 @@
 from django.conf.urls import url
 
-from django.shortcuts import HttpResponse,render
+from django.shortcuts import HttpResponse, render, redirect
+from django.urls import reverse
+
+from django.utils.safestring import mark_safe
 
 
 class ModelStark(object):
-    list_display = []
+    list_display = ["__str__", ]
+    list_display_links = []
+    modelform_class = None
 
     def __init__(self, model, site):
         self.model = model
         self.site = site
 
-    def add(self, request):
+    # 删除 编辑，复选框
+    def edit(self, obj=None, header=False):
+        if header:
+            return "操作"
+        # return mark_safe("<a href='%s/change'>编辑</a>"%obj.pk)
+        _url = self.get_change_url(obj)
 
-        return HttpResponse("add")
+        print("_url", _url)
 
-    def delete(self, request, id):
-        return HttpResponse("delete")
+        return mark_safe("<a href='%s'>编辑</a>" % _url)
 
-    def change(self, request, id):
-        return HttpResponse("change")
+    def deletes(self, obj=None, header=False):
+        if header:
+            return "操作"
+        # return mark_safe("<a href='%s/change'>编辑</a>"%obj.pk)
+
+        _url = self.get_delete_url(obj)
+
+        return mark_safe("<a href='%s'>删除</a>" % _url)
+
+    def checkbox(self, obj=None, header=False):
+        if header:
+            return mark_safe('<input id="choice" type="checkbox">')
+
+        return mark_safe('<input class="choice_item" type="checkbox">')
+
+    def get_modelform_class(self):
+
+        if not self.modelform_class:
+            from django.forms import ModelForm
+            from django.forms import widgets as wid
+            class ModelFormDemo(ModelForm):
+                class Meta:
+                    model = self.model
+                    fields = "__all__"
+                    labels = {
+                        ""
+                    }
+
+            return ModelFormDemo
+        else:
+            return self.modelform_class
+
+    def add_view(self, request):
+        ModelFormDemo = self.get_modelform_class()
+        if request.method == "POST":
+            form = ModelFormDemo(request.POST)
+            if form.is_valid():
+                form.save()
+                return redirect(self.get_list_url())
+
+            return render(request, "add_view.html", locals())
+
+        form = ModelFormDemo()
+
+        return render(request, "add_view.html", locals())
+
+    def delete_view(self, request, id):
+        url = self.get_list_url()
+        if request.method == "POST":
+            self.model.objects.filter(pk=id).delete()
+            return redirect(url)
+
+        return render(request, "delete_view.html", locals())
+
+    def change_view(self, request, id):
+        ModelFormDemo = self.get_modelform_class()
+        edit_obj = self.model.objects.filter(pk=id).first()
+
+        if request.method == "POST":
+            form = ModelFormDemo(request.POST, instance=edit_obj)
+            if form.is_valid():
+                form.save()
+                return redirect(self.get_list_url())
+
+            return render(request, "add_view.html", locals())
+
+        form = ModelFormDemo(instance=edit_obj)
+
+        return render(request, "change_view.html", locals())
 
     def new_list_play(self):
         temp = []
@@ -29,9 +105,45 @@ class ModelStark(object):
         temp.append(ModelStark.deletes)
         return temp
 
+    def get_change_url(self, obj):
+        model_name = self.model._meta.model_name
+        app_label = self.model._meta.app_label
+
+        _url = reverse("%s_%s_change" % (app_label, model_name), args=(obj.pk,))
+
+        return _url
+
+    def get_delete_url(self, obj):
+        model_name = self.model._meta.model_name
+        app_label = self.model._meta.app_label
+
+        _url = reverse("%s_%s_delete" % (app_label, model_name), args=(obj.pk,))
+
+        return _url
+
+    def get_add_url(self):
+
+        model_name = self.model._meta.model_name
+        app_label = self.model._meta.app_label
+
+        _url = reverse("%s_%s_add" % (app_label, model_name))
+
+        return _url
+
+    def get_list_url(self):
+
+        model_name = self.model._meta.model_name
+        app_label = self.model._meta.app_label
+
+        _url = reverse("%s_%s_list" % (app_label, model_name))
+
+        return _url
+
     def list_view(self, request):
-        print(self.model)
+        print(self.model)  # UserConfig(Userinfo).model
         print("list_dispaly", self.list_display)
+
+        data_list = self.model.objects.all()  # 【obj1,obj2,....】
 
         # 构建表头
         header_list = []
@@ -53,17 +165,22 @@ class ModelStark(object):
                     val = self.model._meta.get_field(field).verbose_name
                     header_list.append(val)
 
-        data_list = self.model.objects.all()  # 【obj1,obj2,....】
-
+        # 构建表单数据
         new_data_list = []
         for obj in data_list:
             temp = []
-            for filed in self.list_display:  # ["pk","name","age",edit]
+
+            for filed in self.new_list_play():  # ["__str__",]      ["pk","name","age",edit]
 
                 if callable(filed):
                     val = filed(self, obj)
                 else:
                     val = getattr(obj, filed)
+                    if filed in self.list_display_links:
+                        # "app01/userinfo/(\d+)/change"
+                        _url = self.get_change_url(obj)
+
+                        val = mark_safe("<a href='%s'>%s</a>" % (_url, val))
 
                 temp.append(val)
 
@@ -72,13 +189,17 @@ class ModelStark(object):
         '''
         [
             [1,"alex",12],
+            [1,"alex",12],
+            [1,"alex",12],
+            [1,"alex",12],
 
                  ]
 
         '''
 
         print(new_data_list)
-
+        # 构建一个查看URL
+        add_url = self.get_add_url()
         return render(request, "list_view.html", locals())
 
     def get_urls_2(self):
@@ -88,16 +209,18 @@ class ModelStark(object):
         model_name = self.model._meta.model_name
         app_label = self.model._meta.app_label
 
-        temp.append(url(r"^add/", self.add, name="%s_%s_add" % (app_label, model_name)))
-        temp.append(url(r"^(\d+)/delete/", self.delete, name="%s_%s_delete" % (app_label, model_name)))
-        temp.append(url(r"^(\d+)/change/", self.change, name="%s_%s_change" % (app_label, model_name)))
+        temp.append(url(r"^add/", self.add_view, name="%s_%s_add" % (app_label, model_name)))
+        temp.append(url(r"^(\d+)/delete/", self.delete_view, name="%s_%s_delete" % (app_label, model_name)))
+        temp.append(url(r"^(\d+)/change/", self.change_view, name="%s_%s_change" % (app_label, model_name)))
         temp.append(url(r"^$", self.list_view, name="%s_%s_list" % (app_label, model_name)))
 
         return temp
 
     @property
     def urls_2(self):
+        print(self.model)
         return self.get_urls_2(), None, None
+
 
 class StarkSite(object):
     def __init__(self):
@@ -121,6 +244,7 @@ class StarkSite(object):
             url(r"^app01/userinfo/",UserConfig(Userinfo).urls_2),
             url(r"^app01/book/",ModelStark(Book).urls_2), 
 
+
             '''
         return temp
 
@@ -129,8 +253,6 @@ class StarkSite(object):
 
         return self.get_urls(), None, None
 
+
 starkSite = StarkSite()
-
-
-
 

@@ -1,5 +1,5 @@
 #Django的Xadmin流程以及原理
-url()的使用
+# url()的使用
 
     情况1：url(r'^book/', views.book),  # book(request)
 
@@ -53,17 +53,8 @@ url()的使用
                 print("===>", model._meta.model_name)
                 print("===>", model._meta.app_label)
 
-在ModelStark中：
-       self.model: 用户当前访问的模型表
+# 在ModelStark中：
+self.model: 用户当前访问的模型表
+使用stark组件构建增删改以及表头中文
 
- 查看页面：
-      表头
-      表数据
-      search
-      action
-      分页
-      filter
-
-  增删改（modelForm）
-
-   pop
+![Image](https://github.com/HQCfly/XadminDemo/blob/master/img-folder/starkedit.png)
