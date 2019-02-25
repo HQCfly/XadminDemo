@@ -56,5 +56,8 @@
 # 在ModelStark中：
 self.model: 用户当前访问的模型表
 使用stark组件构建增删改以及表头中文
+stark之分页
+stark之search
+stark之批量操作
 
 ![Image](https://github.com/HQCfly/XadminDemo/blob/master/img-folder/starkedit.png)
