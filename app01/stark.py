@@ -1,4 +1,5 @@
 from django.forms import ModelForm
+from django.http import HttpResponse
 
 from stark.service.stark import starkSite,ModelStark
 
@@ -19,12 +20,19 @@ class BookModelForm(ModelForm):
 class BookConfig(ModelStark):
     list_display = ["title","price",]
     list_display_links = ["title"]
+    search_fields = ["title", "price"]
     modelform_class = BookModelForm
+    def path_init(self,request,queryset):
+        queryset.update(price=123)
+        return HttpResponse("批量初始化")
+    path_init.short_description = "批量初始化"
+    actions = [path_init]
 
 class UserConfig(ModelStark):
 
     list_display = ["name","age",]
     list_display_links = ["name"]
+    search_fields = ["name", "age"]
 starkSite.register(UserInfo,UserConfig)
 
 starkSite.register(Book, BookConfig)

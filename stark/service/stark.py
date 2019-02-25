@@ -1,3 +1,4 @@
+# by luffycity.com
 from django.conf.urls import url
 
 from django.shortcuts import HttpResponse, render, redirect
@@ -5,11 +6,89 @@ from django.urls import reverse
 
 from django.utils.safestring import mark_safe
 
+from stark.utils.page import Pagination
+
+
+class ShowList(object):
+    def __init__(self, config, data_list, request):
+        self.config = config
+        self.data_list = data_list
+        self.request = request
+        # 分页
+        data_count = self.data_list.count()
+        current_page = int(self.request.GET.get("page", 1))
+        base_path = self.request.path
+
+        self.pagination = Pagination(current_page, data_count, base_path, self.request.GET, per_page_num=3,
+                                     pager_count=11, )
+        self.page_data = self.data_list[self.pagination.start:self.pagination.end]
+
+        # actions
+        self.actions = self.config.actions  # [patch_init,]
+
+    def get_action_list(self):
+        temp = []
+        for action in self.actions:
+            temp.append({
+                "name": action.__name__,
+                "desc": action.short_description
+            })  # [{"name":""patch_init,"desc":"批量初始化"}]
+
+        return temp
+
+    def get_header(self):
+        # 构建表头
+        header_list = []
+        print("header",
+              self.config.new_list_play())  # [checkbox,"pk","name","age",edit ,deletes]     【checkbox ,"__str__", edit ,deletes】
+
+        for field in self.config.new_list_play():
+
+            if callable(field):
+                # header_list.append(field.__name__)
+                val = field(self.config, header=True)
+                header_list.append(val)
+
+            else:
+                if field == "__str__":
+                    header_list.append(self.config.model._meta.model_name.upper())
+                else:
+                    # header_list.append(field)
+                    val = self.config.model._meta.get_field(field).verbose_name
+                    header_list.append(val)
+        return header_list
+
+    def get_body(self):
+        # 构建表单数据
+        new_data_list = []
+        for obj in self.page_data:
+            temp = []
+
+            for filed in self.config.new_list_play():  # ["__str__",]      ["pk","name","age",edit]
+
+                if callable(filed):
+                    val = filed(self.config, obj)
+                else:
+                    val = getattr(obj, filed)
+                    if filed in self.config.list_display_links:
+                        # "app01/userinfo/(\d+)/change"
+                        _url = self.config.get_change_url(obj)
+
+                        val = mark_safe("<a href='%s'>%s</a>" % (_url, val))
+
+                temp.append(val)
+
+            new_data_list.append(temp)
+        return new_data_list
+
 
 class ModelStark(object):
     list_display = ["__str__", ]
     list_display_links = []
     modelform_class = None
+    search_fields = []
+
+    actions = []
 
     def __init__(self, model, site):
         self.model = model
@@ -39,7 +118,7 @@ class ModelStark(object):
         if header:
             return mark_safe('<input id="choice" type="checkbox">')
 
-        return mark_safe('<input class="choice_item" type="checkbox">')
+        return mark_safe('<input class="choice_item" type="checkbox" name="selected_pk" value="%s">' % obj.pk)
 
     def get_modelform_class(self):
 
@@ -139,65 +218,38 @@ class ModelStark(object):
 
         return _url
 
+    def get_serach_conditon(self, request):
+        key_word = request.GET.get("q", "")
+        self.key_word = key_word
+        from django.db.models import Q
+        search_connection = Q()
+        if key_word:
+            # self.search_fields # ["title","price"]
+            search_connection.connector = "or"
+            for search_field in self.search_fields:
+                search_connection.children.append((search_field + "__contains", key_word))
+        return search_connection
+
     def list_view(self, request):
-        print(self.model)  # UserConfig(Userinfo).model
-        print("list_dispaly", self.list_display)
+        if request.method == "POST":  # action
+            print("POST:", request.POST)
+            action = request.POST.get("action")
+            selected_pk = request.POST.getlist("selected_pk")
+            action_func = getattr(self, action)
+            queryset = self.model.objects.filter(pk__in=selected_pk)
+            ret = action_func(request, queryset)
 
-        data_list = self.model.objects.all()  # 【obj1,obj2,....】
+            return ret
 
-        # 构建表头
-        header_list = []
-        print("header",
-              self.new_list_play())  # [checkbox,"pk","name","age",edit ,deletes]     【checkbox ,"__str__", edit ,deletes】
+        # 获取serach的Q对象
+        search_connection = self.get_serach_conditon(request)
 
-        for field in self.new_list_play():
+        # 筛选获取当前表所有数据
+        data_list = self.model.objects.all().filter(search_connection)  # 【obj1,obj2,....】
 
-            if callable(field):
-                # header_list.append(field.__name__)
-                val = field(self, header=True)
-                header_list.append(val)
+        # 按这ShowList展示页面
+        showlist = ShowList(self, data_list, request)
 
-            else:
-                if field == "__str__":
-                    header_list.append(self.model._meta.model_name.upper())
-                else:
-                    # header_list.append(field)
-                    val = self.model._meta.get_field(field).verbose_name
-                    header_list.append(val)
-
-        # 构建表单数据
-        new_data_list = []
-        for obj in data_list:
-            temp = []
-
-            for filed in self.new_list_play():  # ["__str__",]      ["pk","name","age",edit]
-
-                if callable(filed):
-                    val = filed(self, obj)
-                else:
-                    val = getattr(obj, filed)
-                    if filed in self.list_display_links:
-                        # "app01/userinfo/(\d+)/change"
-                        _url = self.get_change_url(obj)
-
-                        val = mark_safe("<a href='%s'>%s</a>" % (_url, val))
-
-                temp.append(val)
-
-            new_data_list.append(temp)
-
-        '''
-        [
-            [1,"alex",12],
-            [1,"alex",12],
-            [1,"alex",12],
-            [1,"alex",12],
-
-                 ]
-
-        '''
-
-        print(new_data_list)
         # 构建一个查看URL
         add_url = self.get_add_url()
         return render(request, "list_view.html", locals())
@@ -255,4 +307,15 @@ class StarkSite(object):
 
 
 starkSite = StarkSite()
+
+
+
+
+
+
+
+
+
+
+
 
