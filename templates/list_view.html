@@ -6,6 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.min.css">
     <script src="/static/jquery-3.3.1.js"></script>
+    <style>
+        .filter a{
+            text-decoration: none;
+            color: grey;
+        }
+
+        .active{
+            color: rebeccapurple!important;
+        }
+    </style>
 </head>
 <body>
 
@@ -38,8 +48,6 @@
                                  {% for item in showlist.get_header %}
                                    <th>{{ item }}</th>
                                  {% endfor %}
-
-
                              </tr>
 
                         </thead>
@@ -63,6 +71,21 @@
                         </nav>
 
             </form>
+        </div>
+        <div class="col-md-3">
+            <div class="filter">
+                <h4 style="">Filter</h4>
+                {% for filter_field,linktags in showlist.get_filter_linktags.items %}
+                   <div class="well">
+                         <p>By {{ filter_field.upper }}</p>
+                         {% for link in linktags %}
+                         <p>{{ link|safe }}</p>
+                         {% endfor %}
+                   </div>
+                {% endfor %}
+
+
+            </div>
         </div>
     </div>
 </div>

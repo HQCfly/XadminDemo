@@ -15,18 +15,26 @@ class BookModelForm(ModelForm):
 
         labels={
             "title":"书籍名称",
-            "price":"价格"
+            "price":"价格",
+            "publish": "出版社",
+            "authors": "作者",
         }
 class BookConfig(ModelStark):
-    list_display = ["title","price",]
+    list_display = ["title","price","publish","authors"]
     list_display_links = ["title"]
     search_fields = ["title", "price"]
     modelform_class = BookModelForm
-    def path_init(self,request,queryset):
+
+    def patch_init(self, request, queryset):
         queryset.update(price=123)
-        return HttpResponse("批量初始化")
-    path_init.short_description = "批量初始化"
-    actions = [path_init]
+
+        return HttpResponse("批量初始化OK")
+
+    patch_init.short_description = "批量初始化"
+
+    actions = [patch_init]
+    list_filter = ["title", "publish", "authors", ]
+
 
 class UserConfig(ModelStark):
 
