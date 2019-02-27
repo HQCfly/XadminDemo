@@ -31,6 +31,8 @@ class AuthorDetail(models.Model):
     birthday=models.DateField()
     telephone=models.BigIntegerField()
     addr=models.CharField( max_length=64)
+    def __str__(self):
+        return str(self.addr)
 
 class Publish(models.Model):
     nid = models.AutoField(primary_key=True)

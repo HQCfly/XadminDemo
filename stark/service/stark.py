@@ -124,21 +124,24 @@ class ShowList(object):
                 if callable(filed):
                     val = filed(self.config, obj)
                 else:
-                    # val = getattr(obj, filed)
-                    field_obj = self.config.model._meta.get_field(filed)
-                    if isinstance(field_obj,ManyToManyField):#函数来判断一个对象是否是一个已知的类型，类似 type()。
-                        ret = getattr(obj,filed).all()
-                        t = []
-                        for obj in ret:
-                            t.append(str(obj))
-                        val = ",".join(t)
-                    else:
-                        val = getattr(obj, filed)
-                        if filed in self.config.list_display_links:
-                            # "app01/userinfo/(\d+)/change"
-                            _url = self.config.get_change_url(obj)
+                    try:
+                        # val = getattr(obj, filed)
+                        field_obj = self.config.model._meta.get_field(filed)
+                        if isinstance(field_obj,ManyToManyField):#函数来判断一个对象是否是一个已知的类型，类似 type()。
+                            ret = getattr(obj,filed).all()
+                            t = []
+                            for obj in ret:
+                                t.append(str(obj))
+                            val = ",".join(t)
+                        else:
+                            val = getattr(obj, filed)
+                            if filed in self.config.list_display_links:
+                                # "app01/userinfo/(\d+)/change"
+                                _url = self.config.get_change_url(obj)
 
-                            val = mark_safe("<a href='%s'>%s</a>" % (_url, val))
+                                val = mark_safe("<a href='%s'>%s</a>" % (_url, val))
+                    except Exception as e:
+                        val = getattr(obj,filed)
 
                 temp.append(val)
 
@@ -218,15 +221,39 @@ class ModelStark(object):
 
     def add_view(self, request):
         ModelFormDemo = self.get_modelform_class()
+        form = ModelFormDemo()
+
+        for bfield in form:
+            from django.forms.boundfield import BoundField
+
+            from django.forms.models import ModelChoiceField
+            if isinstance(bfield.field, ModelChoiceField):
+                bfield.is_pop = True
+
+                print("=======>", bfield.field.queryset.model)  # 一对多或者多对多字段的关联模型表
+
+                related_model_name = bfield.field.queryset.model._meta.model_name
+                related_app_label = bfield.field.queryset.model._meta.app_label
+
+                _url = reverse("%s_%s_add" % (related_app_label, related_model_name))
+                bfield.url = _url + "?pop_res_id=id_%s" % bfield.name
         if request.method == "POST":
             form = ModelFormDemo(request.POST)
             if form.is_valid():
-                form.save()
-                return redirect(self.get_list_url())
+                obj = form.save()
 
-            return render(request, "add_view.html", locals())
+                pop_res_id = request.GET.get("pop_res_id")
 
-        form = ModelFormDemo()
+                if pop_res_id:
+                    res = {"pk": obj.pk, "text": str(obj), "pop_res_id": pop_res_id}
+                    import json
+                    return render(request, "pop.html", {"res": res})
+
+
+
+
+                else:
+                    return redirect(self.get_list_url())
 
         return render(request, "add_view.html", locals())
 

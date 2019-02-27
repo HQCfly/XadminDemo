@@ -60,6 +60,8 @@
 ## stark之search
 ## stark之批量操作
 ## stark之过滤
+## stark之pop
 
 ![Image](https://github.com/HQCfly/XadminDemo/blob/master/img-folder/starkedit.png)
 ![Image](https://github.com/HQCfly/XadminDemo/blob/master/img-folder/filter.png)
+![Image](https://github.com/HQCfly/XadminDemo/blob/master/img-folder/pop.png)
