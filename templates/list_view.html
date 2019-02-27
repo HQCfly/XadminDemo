@@ -73,19 +73,22 @@
             </form>
         </div>
         <div class="col-md-3">
-            <div class="filter">
-                <h4 style="">Filter</h4>
-                {% for filter_field,linktags in showlist.get_filter_linktags.items %}
-                   <div class="well">
-                         <p>By {{ filter_field.upper }}</p>
-                         {% for link in linktags %}
-                         <p>{{ link|safe }}</p>
-                         {% endfor %}
-                   </div>
-                {% endfor %}
+            {% if showlist.config.list_filter  %}
+
+                <div class="filter">
+                    <h4 style="">Filter</h4>
+                    {% for filter_field,linktags in showlist.get_filter_linktags.items %}
+                       <div class="well">
+                             <p>By {{ filter_field.upper }}</p>
+                             {% for link in linktags %}
+                             <p>{{ link|safe }}</p>
+                             {% endfor %}
+                       </div>
+                    {% endfor %}
 
 
-            </div>
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>

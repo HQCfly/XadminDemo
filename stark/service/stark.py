@@ -130,8 +130,8 @@ class ShowList(object):
                         if isinstance(field_obj,ManyToManyField):#函数来判断一个对象是否是一个已知的类型，类似 type()。
                             ret = getattr(obj,filed).all()
                             t = []
-                            for obj in ret:
-                                t.append(str(obj))
+                            for mobj in ret:
+                                t.append(str(mobj))
                             val = ",".join(t)
                         else:
                             val = getattr(obj, filed)
